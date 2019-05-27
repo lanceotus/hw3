@@ -1,4 +1,5 @@
 import os
+import logging
 
 
 class WebApplication:
@@ -10,14 +11,25 @@ class WebApplication:
     _DEFAULT_CONTENT_TYPE = 'text/plain'
     _DOCS_DIR = './docs'
 
-    def __init__(self):
+    def __init__(self, debug=False, console_logging=True, log_file=None):
         self.handlers = {}
+        self.debug = debug
+        if self.debug == True:
+            self.logger = logging.getLogger("TestWSGIFramework")
+            self.logger.setLevel(logging.DEBUG)
+            if console_logging == True:
+                self.logger.addHandler(logging.StreamHandler())
+            if log_file:
+                self.logger.addHandler(logging.FileHandler(log_file, encoding='UTF-8'))
 
     def __call__(self, environ, start_response):
-        print(environ)
+        if self.debug:
+            self.logger.debug(environ)
 
         resource = environ['PATH_INFO'].strip('/')
-        print(resource)
+
+        if self.debug:
+            self.logger.debug(resource)
 
         if resource in self.handlers:
             handler = self.handlers[resource]
@@ -29,7 +41,9 @@ class WebApplication:
         resp_code = resp['code'] if 'code' in resp else self._DEFAULT_RESPONSE_CODE
         resp_content_type = resp['content_type'] if 'content_type' in resp else self._DEFAULT_CONTENT_TYPE
         status = '%s %s' % (resp_code, self.HTTP_Response_codes[resp_code])
-        print(status)
+
+        if self.debug:
+            self.logger.debug(status)
 
         start_response(status, [('Content-Type', resp_content_type)])
         return [resp_text.encode('UTF-8')]
@@ -65,4 +79,3 @@ class WebApplication:
             content_type = 'text/plain'
 
         return {'text': content, 'content_type': content_type}
-
